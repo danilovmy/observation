@@ -1,14 +1,18 @@
-FROM alpine:3, 3.18, 3.18.0, latest
+FROM python:latest
 
 ## Create a group and user
 
-WORKDIR ..
+WORKDIR /observations
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
 
 ## Install and test.
-RUN pip install -f requirements.txt
-cd app
-RUN python manage.py shemamigrations
+RUN python manage.py makemigrations
 RUN python manage.py migrate
-RUN python manage.py loadfixtures
+RUN python manage.py loaddata observations monitoreds
 
-CMD ['python', 'manage.py', 'runserver', '0.0.0.0:8000']
+EXPOSE 8000
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
