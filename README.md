@@ -27,7 +27,7 @@ This repository present e a REST API that will allow to:
 2. Compute and fetch the mean of Observations values (or component’s values)
 for a given observation_name.
 
-Completely unclear "mean" - matematical "average", or real measurment maximally close to awerage? 
+3. Completely unclear "mean" - matematical "average", or real measurment maximally close to awerage? 
 
 What to do with steps? If We speak about steps - per hour/day, but we probably should speak about activity hours? Other case - if i sleep from 0 till 6 and can not have activity 1000steps/per hour. It should be choosen before calculation.
 
@@ -39,9 +39,11 @@ What it should be done with errors? Or data is already cleaned?
 
 I did an mathematical average calculation as well as max or min, but it is against humanity ideology :)
 
+
 # How to start
 
 Clone the repository.
+
 run application in docker (depends on your OS)
 
 Use browser to achieve http://localhost:8000/api/schema/swagger-ui/
