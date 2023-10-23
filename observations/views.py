@@ -64,7 +64,22 @@ class ObservationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mix
 
 @extend_schema_view(
     #DRF spectacular dont work with filter_backends and custom action
-    last=extend_schema(description='get last from list of observations', parameters = [
+    last=extend_schema(description='get last from list of observations by type', parameters = [
+        OpenApiParameter(name='observation_name', description="type of observations"),
+        OpenApiParameter(name='monitored', description="monitored id"),
+        OpenApiParameter(name='issued', description="range of data"),
+        ]),
+    max=extend_schema(description='get max value from list of observations by type', parameters = [
+        OpenApiParameter(name='observation_name', description="type of observations"),
+        OpenApiParameter(name='monitored', description="monitored id"),
+        OpenApiParameter(name='issued', description="range of data"),
+        ]),
+    min=extend_schema(description='get min value from list of observations by type', parameters = [
+        OpenApiParameter(name='observation_name', description="type of observations"),
+        OpenApiParameter(name='monitored', description="monitored id"),
+        OpenApiParameter(name='issued', description="range of data"),
+        ]),
+    average=extend_schema(description='get average value from list of observations by type', parameters = [
         OpenApiParameter(name='observation_name', description="type of observations"),
         OpenApiParameter(name='monitored', description="monitored id"),
         OpenApiParameter(name='issued', description="range of data"),

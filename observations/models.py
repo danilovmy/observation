@@ -1,13 +1,14 @@
 from django.db.models import ForeignKey, DateTimeField, CharField, CASCADE, Model, QuerySet, FloatField
 from settings import translator as _
-from django.db.models.expressions import Value, F
+from django.db.models.expressions import F
 from django.db.models.aggregates import Avg
+from django.db.models.functions import Cast
 
 class ObservationQueryset(QuerySet):
 
     def transform_value(self, *args, **kwargs):
         # ouput_field should be defined accordingly to the value_type, not always float
-        return self.annotate(transformed_value=Value(F('value'), output_field=FloatField()))
+        return self.annotate(transformed_value=Cast(F('value'), output_field=FloatField()))
 
     def get_min(self, *args, **kwargs):
         return self.transform_value(*args, **kwargs).order_by('transformed_value')[:1]
