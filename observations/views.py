@@ -7,7 +7,7 @@ from django_filters import rest_framework as filters
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from .models import Observation
-
+from drf_spectacular.utils import OpenApiParameter
 
 # class ObservationsFilter(BaseFilterBackend):
 
@@ -55,7 +55,15 @@ class ObservationSerializer(ModelSerializer):
         return observation
 
 
-@extend_schema_view(list=extend_schema(description='get list of observations'))
+@extend_schema_view(
+    list=extend_schema(description='get list of observations'),
+    #DRF spectacular dont work with filter_backends and custom action
+    last=extend_schema(description='get last from list of observations', parameters = [
+        OpenApiParameter(name='observation_name', description="type of observations"),
+        OpenApiParameter(name='monitored', description="monitored id"),
+        OpenApiParameter(name='issued', description="range of data"),
+        ]),
+    )
 class ObservationsViewSet(mixins.ListModelMixin, GenericViewSet):
     http_method_names = ['get', 'options', 'head']
     serializer_class = ObservationSerializer
@@ -63,17 +71,16 @@ class ObservationsViewSet(mixins.ListModelMixin, GenericViewSet):
     filter_backends = (filters.DjangoFilterBackend, )
     filterset_class = ObservationsFilter
 
-
-@extend_schema_view(list=extend_schema(description='get last from list of observations'))
-class LastObservationsView(ListAPIView):
-    http_method_names = ['get', 'options', 'head']
-    serializer_class = ObservationSerializer
-    queryset = ObservationSerializer.Meta.model.objects
-    filter_backends = (filters.DjangoFilterBackend, )
-    filterset_class = ObservationsFilter
-
     def filter_queryset(self, *args, **kwargs):
-        return super().filter_queryset(*args, **kwargs).order_by('-issued')[:1]
+        queryset = super().filter_queryset(*args, **kwargs)
+        if self.action == 'last':
+            queryset = queryset.order_by('-issued')[:1]
+        return queryset
+
+    @action(detail=False)
+    def last(self, *args, **kwargs):
+        return self.list(*args, **kwargs)
+
 
 
 class ObservationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,GenericViewSet):
