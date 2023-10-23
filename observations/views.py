@@ -1,4 +1,7 @@
 from rest_framework.viewsets import ModelViewSet, mixins, GenericViewSet
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.generics import ListAPIView
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from django_filters import rest_framework as filters
 from rest_framework import serializers
@@ -57,8 +60,20 @@ class ObservationsViewSet(mixins.ListModelMixin, GenericViewSet):
     http_method_names = ['get', 'options', 'head']
     serializer_class = ObservationSerializer
     queryset = ObservationSerializer.Meta.model.objects
-    #filter_backends = (filters.DjangoFilterBackend, )
-    #filterset_class = ObservationsFilter
+    filter_backends = (filters.DjangoFilterBackend, )
+    filterset_class = ObservationsFilter
+
+
+@extend_schema_view(list=extend_schema(description='get last from list of observations'))
+class LastObservationsView(ListAPIView):
+    http_method_names = ['get', 'options', 'head']
+    serializer_class = ObservationSerializer
+    queryset = ObservationSerializer.Meta.model.objects
+    filter_backends = (filters.DjangoFilterBackend, )
+    filterset_class = ObservationsFilter
+
+    def filter_queryset(self, *args, **kwargs):
+        return super().filter_queryset(*args, **kwargs).order_by('-issued')[:1]
 
 
 class ObservationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,GenericViewSet):
@@ -66,10 +81,6 @@ class ObservationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mix
     serializer_class = ObservationSerializer
     queryset = ObservationSerializer.Meta.model.objects
 
-
-class ComputeObservationsMean(ModelViewSet):
-    serializer_class = ObservationSerializer
-    queryset = ObservationSerializer.Meta.model.objects
 
 # # details lists
 
