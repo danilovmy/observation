@@ -9,16 +9,6 @@ from rest_framework.serializers import ModelSerializer
 from .models import Observation
 from drf_spectacular.utils import OpenApiParameter
 
-# class ObservationsFilter(BaseFilterBackend):
-
-#     def filter_queryset(self, request, queryset, view):
-#         kwargs = dict(observation_name=request.query_params.get('observation_name'),
-#                       monitored_id = request.query_params.get('monitored_id'),
-#                       issued__lte = request.query_params.get('issued_from'),
-#                       issued__gte = request.query_params.get('issued_till'))
-#         kwargs = {key: val for key, val in kwargs.items() if val} or {'observation__isnull': True}
-#         return queryset if view.kwargs else queryset.filter(**kwargs)
-
 
 class ObservationsFilter(filters.FilterSet):
     observation_name = filters.CharFilter(lookup_expr="icontains")
@@ -55,32 +45,13 @@ class ObservationSerializer(ModelSerializer):
         return observation
 
 
-@extend_schema_view(
-    list=extend_schema(description='get list of observations'),
-    #DRF spectacular dont work with filter_backends and custom action
-    last=extend_schema(description='get last from list of observations', parameters = [
-        OpenApiParameter(name='observation_name', description="type of observations"),
-        OpenApiParameter(name='monitored', description="monitored id"),
-        OpenApiParameter(name='issued', description="range of data"),
-        ]),
-    )
+@extend_schema_view(list=extend_schema(description='get list of observations'))
 class ObservationsViewSet(mixins.ListModelMixin, GenericViewSet):
     http_method_names = ['get', 'options', 'head']
     serializer_class = ObservationSerializer
     queryset = ObservationSerializer.Meta.model.objects
     filter_backends = (filters.DjangoFilterBackend, )
     filterset_class = ObservationsFilter
-
-    def filter_queryset(self, *args, **kwargs):
-        queryset = super().filter_queryset(*args, **kwargs)
-        if self.action == 'last':
-            queryset = queryset.order_by('-issued')[:1]
-        return queryset
-
-    @action(detail=False)
-    def last(self, *args, **kwargs):
-        return self.list(*args, **kwargs)
-
 
 
 class ObservationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,GenericViewSet):
@@ -89,44 +60,33 @@ class ObservationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mix
     queryset = ObservationSerializer.Meta.model.objects
 
 
-# # details lists
 
-# async def get_observations_by(observation_name: str, monitored_id: int=None, date_from: datetime=None, date_till: datetime=None):
-#     logger.info(f"get observations {observation_name}")
-#     return await Observation.objects.filter(observation_name=observation_name, monitored_id=monitored_id, date_from=date_from, date_till=date_till)
+@extend_schema_view(
+    #DRF spectacular dont work with filter_backends and custom action
+    last=extend_schema(description='get last from list of observations', parameters = [
+        OpenApiParameter(name='observation_name', description="type of observations"),
+        OpenApiParameter(name='monitored', description="monitored id"),
+        OpenApiParameter(name='issued', description="range of data"),
+        ]),
+    )
+class CalculateViewSet(ObservationsViewSet):
 
-# # computations
-# async def get_compute_mean_by(observation_name: str, monitored_id: int=None, date_from: datetime=None, date_till: datetime=None):
-#     logger.info(f"compute observations mean{observation_name}")
-#     return await Observation.objects.compute_mean(observation_name=observation_name, monitored_id=monitored_id, date_from=date_from, date_till=date_till)
+    def filter_queryset(self, *args, **kwargs):
+        queryset = super().filter_queryset(*args, **kwargs)
+        return getattr(queryset, f'get_{self.action}', queryset.get_all)(self, *args, **kwargs)
 
+    @action(detail=False)
+    def min(self, *args, **kwargs):
+        return self.list(*args, **kwargs)
 
-# async def get_compute_average_by(observation_name: str, monitored_id: int=None, date_from: datetime=None, date_till: datetime=None):
-#     logger.info(f"compute observations average{observation_name}")
-#     return await Observation.objects.compute_average(observation_name=observation_name, monitored_id=monitored_id, date_from=date_from, date_till=date_till)
+    @action(detail=False)
+    def max(self, *args, **kwargs):
+        return self.list(*args, **kwargs)
 
+    @action(detail=False)
+    def average(self, *args, **kwargs):
+        return self.list(*args, **kwargs)
 
-# async def get_compute_min_by(observation_name: str, monitored_id: int=None, date_from: datetime=None, date_till: datetime=None):
-#     logger.info(f"compute observations min{observation_name}")
-#     return await Observation.objects.compute_min(observation_name=observation_name, monitored_id=monitored_id, date_from=date_from, date_till=date_till)
-
-
-# async def get_compute_max_by(observation_name: str, monitored_id: int=None, date_from: datetime=None, date_till: datetime=None):
-#     logger.info(f"compute observations max{observation_name}")
-#     return await Observation.objects.compute_max(observation_name=observation_name, monitored_id=monitored_id, date_from=date_from, date_till=date_till)
-
-
-# # savers / patchers
-# async def post_add_observation(observation: Observation):
-#     logger.info(f"Add observation {observation}")
-#     return await Observation.objects.add(Observation)
-
-# async def patch_change_observation(observation: Observation):
-#     # Do nothing, probably it should be not possible to change any observation directly
-#     logger.info(f"Update observation {observation}")
-#     return await Observation.objects.update(Observation)
-
-# async def delete_observation(observation: Observation):
-#     # Do nothing, probably it should be not possible to delete any observation directly
-#     logger.info(f"Delete observation {observation}")
-#     return await Observation.objects.delete(Observation)
+    @action(detail=False)
+    def last(self, *args, **kwargs):
+        return self.list(*args, **kwargs)

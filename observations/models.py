@@ -3,7 +3,22 @@ from settings import translator as _
 
 
 class ObservationQueryset(QuerySet):
-    ...
+
+    def get_min(self, *args, **kwargs):
+        return self
+
+    def get_max(self, *args, **kwargs):
+        return self
+
+    def get_average(self, *args, **kwargs):
+        return self
+
+    def get_last(self, *args, **kwargs):
+        return self.order_by('-issued')[:1]
+
+    def get_all(self, *args, **kwargs):
+        return self.all()
+
 
 class Observation(Model):
 
