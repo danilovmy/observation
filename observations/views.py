@@ -37,11 +37,12 @@ class ObservationSerializer(ModelSerializer):
 
 
     def create(self, validated_data):
-        components_data = validated_data.pop('components')
-        observation = self.Meta.model.objects.create(**validated_data)
-        static_data = dict(observation=observation, monitored=observation.monitored, issued=observation.issued)
-        for component_data in components_data:
-            self.Meta.model.objects.create(**component_data, **static_data)
+        components_data = validated_data.pop('components', None)
+        observation = super().create(validated_data)
+        if components_data:
+            static_data = dict(observation=observation, monitored=observation.monitored, issued=observation.issued)
+            for component_data in components_data:
+                super().create(component_data | static_data)
         return observation
 
 
