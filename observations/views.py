@@ -11,13 +11,19 @@ from drf_spectacular.utils import OpenApiParameter
 
 
 class ObservationsFilter(filters.FilterSet):
-    observation_name = filters.CharFilter(lookup_expr="icontains")
-    monitored = filters.ModelChoiceFilter(queryset=Observation.monitored.field.remote_field.model.objects.all(), required=True)
-    issued = filters.IsoDateTimeFromToRangeFilter()
+    observation_name = filters.CharFilter(lookup_expr="icontains", help_text="type of observations")
+    monitored = filters.ModelChoiceFilter(queryset=Observation.monitored.field.remote_field.model.objects.all(), required=True, help_text="monitored id")
+    issued = filters.IsoDateTimeFromToRangeFilter(help_text="range of data")
 
     class Meta:
         model = Observation
         fields = ('observation_name', 'monitored', 'issued')
+
+    @classmethod
+    def to_openapi(cls):
+        for name, field in cls.declared_filters.items():
+            yield OpenApiParameter(name= field.field_name, required=field.extra.get('required') or False, description = field.extra.get('help_text') or field.label or '')
+
 
     @property
     def qs(self):
@@ -64,27 +70,11 @@ class ObservationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mix
 
 @extend_schema_view(
     #DRF spectacular dont work with filter_backends and custom action
-    last=extend_schema(description='get last from list of observations by type', parameters = [
-        OpenApiParameter(name='observation_name', description="type of observations"),
-        OpenApiParameter(name='monitored', description="monitored id"),
-        OpenApiParameter(name='issued', description="range of data"),
-        ]),
-    max=extend_schema(description='get max value from list of observations by type', parameters = [
-        OpenApiParameter(name='observation_name', description="type of observations"),
-        OpenApiParameter(name='monitored', description="monitored id"),
-        OpenApiParameter(name='issued', description="range of data"),
-        ]),
-    min=extend_schema(description='get min value from list of observations by type', parameters = [
-        OpenApiParameter(name='observation_name', description="type of observations"),
-        OpenApiParameter(name='monitored', description="monitored id"),
-        OpenApiParameter(name='issued', description="range of data"),
-        ]),
-    average=extend_schema(description='get average value from list of observations by type', parameters = [
-        OpenApiParameter(name='observation_name', description="type of observations"),
-        OpenApiParameter(name='monitored', description="monitored id"),
-        OpenApiParameter(name='issued', description="range of data"),
-        ]),
-    )
+    last=extend_schema(description='get last from list of observations by type', parameters=[*ObservationsFilter.to_openapi()]),
+    max=extend_schema(description='get max value from list of observations by type', parameters=[*ObservationsFilter.to_openapi()]),
+    min=extend_schema(description='get min value from list of observations by type', parameters=[*ObservationsFilter.to_openapi()]),
+    average=extend_schema(description='get average value from list of observations by type', parameters=[*ObservationsFilter.to_openapi()]),
+)
 class CalculateViewSet(ObservationsViewSet):
 
     def filter_queryset(self, *args, **kwargs):
