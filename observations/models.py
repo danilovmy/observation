@@ -3,6 +3,7 @@ from settings import translator as _
 from django.db.models.expressions import F
 from django.db.models.aggregates import Avg
 from django.db.models.functions import Cast
+from django.utils.timezone import now
 
 class ObservationQueryset(QuerySet):
 
@@ -17,7 +18,15 @@ class ObservationQueryset(QuerySet):
         return self.transform_value(*args, **kwargs).order_by('-transformed_value')[:1]
 
     def get_average(self, *args, **kwargs):
-        return self.transform_value(*args, **kwargs).aggregate(Avg('transformed_value'))
+        result = self.transform_value(*args, **kwargs).aggregate(Avg('transformed_value'))
+        if result:
+            last = self.get_last(*args, **kwargs)
+            last.pk = None
+            last.issued= now()
+            last.value_type = 'Average'
+            last.value = result.get('transformed_value__avg') or 0
+            return [last]
+        return self.none()
 
     def get_last(self, *args, **kwargs):
         return self.order_by('-issued')[:1]
